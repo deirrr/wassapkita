@@ -47,10 +47,30 @@ function initWhatsAppClient() {
     }
   });
 
+  // waClient.on("ready", () => {
+  //   console.log("WhatsApp siap!");
+  //   if (mainWindow) {
+  //     mainWindow.webContents.send("wa:status", "ready");
+  //   }
+  // });
+
   waClient.on("ready", () => {
     console.log("WhatsApp siap!");
+
+    // ambil info akun yang login
+    const info = waClient.info || {};
+    const number = info.wid?.user || ""; // biasanya nomor tanpa tanda +
+    const pushname = info.pushname || ""; // nama profil WA kalau ada
+
     if (mainWindow) {
+      // kirim status
       mainWindow.webContents.send("wa:status", "ready");
+
+      // kirim info akun
+      mainWindow.webContents.send("wa:me", {
+        number,
+        pushname,
+      });
     }
   });
 
@@ -63,6 +83,13 @@ function initWhatsAppClient() {
       );
     }
   });
+
+  // waClient.on("authenticated", () => {
+  //   console.log("Authenticated");
+  //   if (mainWindow) {
+  //     mainWindow.webContents.send("wa:status", "authenticated");
+  //   }
+  // });
 
   waClient.on("authenticated", () => {
     console.log("Authenticated");

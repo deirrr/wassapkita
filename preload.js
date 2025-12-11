@@ -19,4 +19,12 @@ contextBridge.exposeInMainWorld("wassapkita", {
       }
     });
   },
+
+  onMe: (callback) => {
+    ipcRenderer.on("wa:me", (_event, me) => {
+      if (typeof callback === "function") {
+        callback(me);
+      }
+    });
+  },
 });

@@ -63,6 +63,14 @@
       .hint strong {
         color: #a5b4fc;
       }
+      .me-info {
+        font-size: 12px;
+        margin-top: 10px;
+        opacity: 0.9;
+      }
+      .me-info strong {
+        color: #4ade80;
+      }
     </style>
   </head>
   <body>
@@ -79,6 +87,12 @@
         </div>
 
         <div class="status">{{ statusText }}</div>
+
+        <div v-if="meNumber" class="me-info">
+          Terhubung sebagai:
+          <strong>{{ formattedNumber }}</strong>
+          <span v-if="meName">({{ meName }})</span>
+        </div>
 
         <div class="hint">
           Buka <strong>WhatsApp &gt; Perangkat tertaut</strong>, lalu scan kode
@@ -99,10 +113,19 @@
           return {
             qrImage: "",
             statusText: "Menunggu QR dari WhatsApp...",
+            meNumber: "",
+            meName: "",
           };
         },
+        computed: {
+          formattedNumber() {
+            if (!this.meNumber) return "";
+            // kalau belum ada + di depan, tambahkan + secara simple
+            if (this.meNumber.startsWith("+")) return this.meNumber;
+            return "+" + this.meNumber;
+          },
+        },
         mounted() {
-          // listener QR dari Electron (whatsapp-web.js)
           if (window.wassapkita?.onQr) {
             window.wassapkita.onQr((dataUrl) => {
               this.qrImage = dataUrl;
@@ -110,10 +133,19 @@
             });
           }
 
-          // listener status (ready, authenticated, dsb.)
           if (window.wassapkita?.onStatus) {
             window.wassapkita.onStatus((status) => {
               this.statusText = `Status: ${status}`;
+            });
+          }
+
+          if (window.wassapkita?.onMe) {
+            window.wassapkita.onMe((me) => {
+              this.meNumber = me?.number || "";
+              this.meName = me?.pushname || "";
+              if (this.meNumber) {
+                this.statusText = "Terhubung ke WhatsApp.";
+              }
             });
           }
         },
