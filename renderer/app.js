@@ -1,44 +1,47 @@
 // renderer/app.js
-// Entry Vue untuk Wassapkita (bisa dikembangkan jadi multi-halaman)
+// Entry Vue untuk Wassapkita (struktur ala SPA sederhana)
 
 import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js";
 
+// Halaman login / QR WhatsApp
 const LoginView = {
   name: "LoginView",
   template: `
-    <div class="card">
-      <div class="title">Wassapkita</div>
-      <div class="subtitle">
-        Scan QR berikut dengan aplikasi WhatsApp kamu.
-      </div>
-
-      <div class="qr-box">
-        <img
-          v-if="qrImage"
-          :src="qrImage"
-          alt="QR Code"
-        />
-        <div v-else class="status">
-          Menunggu QR dari WhatsApp...
+    <div class="app-shell">
+      <div class="card">
+        <div class="title">Wassapkita</div>
+        <div class="subtitle">
+          Scan QR berikut dengan aplikasi WhatsApp kamu.
         </div>
-      </div>
 
-      <div class="status">
-        {{ statusText }}
-      </div>
+        <div class="qr-box">
+          <img
+            v-if="qrImage"
+            :src="qrImage"
+            alt="QR Code"
+          />
+          <div v-else class="status">
+            Menunggu QR dari WhatsApp...
+          </div>
+        </div>
 
-      <div
-        v-if="meNumber"
-        class="me-info"
-      >
-        Terhubung sebagai:
-        <strong>{{ formattedNumber }}</strong>
-        <span v-if="meName">({{ meName }})</span>
-      </div>
+        <div class="status">
+          {{ statusText }}
+        </div>
 
-      <div class="hint">
-        Buka <strong>WhatsApp &gt; Perangkat tertaut</strong>, lalu scan kode ini.
-        Kode akan otomatis berganti jika kedaluwarsa, seperti di WhatsApp Web.
+        <div
+          v-if="meNumber"
+          class="me-info"
+        >
+          Terhubung sebagai:
+          <strong>{{ formattedNumber }}</strong>
+          <span v-if="meName">({{ meName }})</span>
+        </div>
+
+        <div class="hint">
+          Buka <strong>WhatsApp &gt; Perangkat tertaut</strong>, lalu scan kode ini.
+          Kode akan otomatis berganti jika kedaluwarsa, seperti di WhatsApp Web.
+        </div>
       </div>
     </div>
   `,
@@ -83,10 +86,26 @@ const LoginView = {
   },
 };
 
+// App shell, nanti bisa ganti-ganti view: login, dashboard, dst.
 const App = {
   name: "App",
   components: { LoginView },
-  template: `<login-view />`,
+  data() {
+    return {
+      currentView: "login", // ke depan bisa: 'login', 'dashboard', 'settings', dll.
+    };
+  },
+  computed: {
+    currentViewComponent() {
+      const map = {
+        login: "LoginView",
+      };
+      return map[this.currentView] || "LoginView";
+    },
+  },
+  template: `
+    <component :is="currentViewComponent" />
+  `,
 };
 
-createApp(App).mount("#app");
+createApp(App).component("LoginView", LoginView).mount("#app");

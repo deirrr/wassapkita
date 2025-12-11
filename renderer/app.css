@@ -1,0 +1,89 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  background: #020617;
+  color: #e5e7eb;
+}
+
+/* Layout utama (bisa dipakai ulang untuk halaman lain nanti) */
+.app-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* Kartu utama */
+.card {
+  background: #0b1120;
+  border-radius: 16px;
+  padding: 24px 28px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.8);
+  width: 360px;
+  text-align: center;
+}
+
+.title {
+  font-size: 22px;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  font-size: 13px;
+  opacity: 0.8;
+  margin-bottom: 16px;
+}
+
+/* QR code */
+.qr-box {
+  background: #020617;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid #1f2937;
+}
+
+.qr-box img {
+  width: 240px;
+  height: 240px;
+  display: block;
+  margin: 0 auto;
+}
+
+/* Status dan info */
+.status {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-top: 6px;
+  min-height: 16px;
+}
+
+.hint {
+  font-size: 12px;
+  margin-top: 12px;
+  opacity: 0.85;
+}
+
+.hint strong {
+  color: #a5b4fc;
+}
+
+.me-info {
+  font-size: 12px;
+  margin-top: 10px;
+  opacity: 0.9;
+}
+
+.me-info strong {
+  color: #4ade80;
+}
