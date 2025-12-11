@@ -1,5 +1,22 @@
 // preload.js
-// Untuk jembatan antara frontend (renderer) dan Electron main process
-// Sekarang belum ada apa-apa, tapi nanti bisa diisi IPC, dll.
+// Jembatan antara Electron main dan frontend (index.html)
 
-// Contoh expose API ke window kalau sudah pakai contextBridge, dsb.
+const { contextBridge, ipcRenderer } = require("electron");
+
+contextBridge.exposeInMainWorld("wassapkita", {
+  onQr: (callback) => {
+    ipcRenderer.on("wa:qr", (_event, dataUrl) => {
+      if (typeof callback === "function") {
+        callback(dataUrl);
+      }
+    });
+  },
+
+  onStatus: (callback) => {
+    ipcRenderer.on("wa:status", (_event, status) => {
+      if (typeof callback === "function") {
+        callback(status);
+      }
+    });
+  },
+});

@@ -1,40 +1,106 @@
 // main.js
-// Entry utama aplikasi Electron Wassapkita (versi Hello World)
+// Entry utama aplikasi Electron Wassapkita + integrasi whatsapp-web.js (QR only)
 
-const { app, BrowserWindow } = require('electron');
-const path = require('path');
+const { app, BrowserWindow } = require("electron");
+const path = require("path");
+const { Client, LocalAuth } = require("whatsapp-web.js");
+const qrcode = require("qrcode");
+
+let mainWindow;
+let waClient;
 
 function createWindow() {
-  const win = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 900,
     height: 600,
     webPreferences: {
-      // nanti kalau pakai frontend framework, preload bisa dipakai
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
     },
   });
 
-  // load file HTML sederhana
-  win.loadFile('index.html');
+  mainWindow.loadFile("index.html");
 
-  // opsional: buka devtools saat development
-  // win.webContents.openDevTools();
+  // optional: buka devtools saat dev
+  // mainWindow.webContents.openDevTools();
+}
+
+function initWhatsAppClient() {
+  waClient = new Client({
+    authStrategy: new LocalAuth(),
+    puppeteer: {
+      headless: true, // biar tidak buka browser sendiri
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    },
+  });
+
+  waClient.on("qr", async (qr) => {
+    console.log("QR diterima dari WhatsApp");
+    try {
+      const dataUrl = await qrcode.toDataURL(qr);
+      if (mainWindow) {
+        mainWindow.webContents.send("wa:qr", dataUrl);
+      }
+    } catch (err) {
+      console.error("Gagal generate QR:", err);
+    }
+  });
+
+  waClient.on("ready", () => {
+    console.log("WhatsApp siap!");
+    if (mainWindow) {
+      mainWindow.webContents.send("wa:status", "ready");
+    }
+  });
+
+  waClient.on("loading_screen", (percent, message) => {
+    console.log("Loading", percent, message);
+    if (mainWindow) {
+      mainWindow.webContents.send(
+        "wa:status",
+        `loading ${percent}% - ${message}`
+      );
+    }
+  });
+
+  waClient.on("authenticated", () => {
+    console.log("Authenticated");
+    if (mainWindow) {
+      mainWindow.webContents.send("wa:status", "authenticated");
+    }
+  });
+
+  waClient.on("disconnected", (reason) => {
+    console.log("Disconnected", reason);
+    if (mainWindow) {
+      mainWindow.webContents.send("wa:status", `disconnected: ${reason}`);
+    }
+    // bisa di-init ulang kalau mau
+  });
+
+  waClient.initialize().catch((err) => {
+    console.error("Gagal inisialisasi WhatsApp client:", err);
+  });
 }
 
 app.whenReady().then(() => {
   createWindow();
+  initWhatsAppClient();
 
-  app.on('activate', () => {
-    // di macOS, buka window lagi kalau di-click icon dock dan tidak ada window
+  app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
   });
 });
 
-app.on('window-all-closed', () => {
-  // di Windows/Linux, keluar kalau semua window ditutup
-  if (process.platform !== 'darwin') {
+app.on("window-all-closed", () => {
+  if (waClient) {
+    waClient.destroy().catch(() => {});
+  }
+
+  if (process.platform !== "darwin") {
     app.quit();
   }
 });
