@@ -1,148 +1,77 @@
 # Wassapkita
 
-Aplikasi desktop open-source untuk otomasi WhatsApp berbasis WhatsApp Web.  
-Dibangun dengan Electron, Node.js, dan Vue.
+An open-source desktop application for WhatsApp automation powered by WhatsApp Web.
+Built with Electron, Node.js, and Vue.
 
-Wassapkita dirancang agar pengguna non-teknis bisa mengirim pesan WhatsApp secara efisien melalui aplikasi desktop—tanpa perlu instal Node.js atau melakukan proses konfigurasi teknis.  
-Developer dapat berkontribusi secara langsung melalui repositori ini.
-
----
-
-## Status Proyek
-
-Proyek saat ini sudah berada pada tahap awal tetapi *sudah memiliki fitur inti* pertama, yaitu:
-
-### ✔ Login WhatsApp via QR (mirip WhatsApp Web)
-- QR otomatis berganti setiap beberapa detik (expiry cycle WhatsApp)
-- Sesi login tersimpan menggunakan `LocalAuth`
-- Saat login berhasil, aplikasi menampilkan nomor WhatsApp & nama akun
-
-Fitur rencana selanjutnya:
-
-- Pengiriman pesan individual melalui UI
-- Broadcast / kirim massal dari file Excel (dengan jeda aman)
-- Template pesan (reminder, ucapan, follow-up pasien, dll)
-- Log pesan terkirim dan export hasil
-- Halaman dashboard
-- Manajemen perangkat & auto reconnect
+Wassapkita is designed so non-technical users can send WhatsApp messages efficiently through a desktop app without installing Node.js or performing any technical configuration.
+Developers can contribute directly through this repository.
 
 ---
 
-## Teknologi yang Digunakan
+## Technologies Used
 
-- **Electron** — Kemasan aplikasi desktop
-- **Node.js** — Backend internal & koneksi WhatsApp
-- **Vue 3 (SPA style)** — Antarmuka pengguna (renderer)
-- **whatsapp-web.js** — Integrasi WhatsApp Web + QR Login
-- **LocalAuth** — Penyimpanan sesi login WhatsApp
-
----
-
-## Struktur Proyek (Saat Ini)
-
-Struktur sudah mulai modular dan terpisah antara:
-- proses utama (Electron)
-- renderer (Vue)
-- asset CSS
-
-```
-
-wassapkita/
-├─ main.js                 # Entry utama Electron (backend + WA client)
-├─ preload.js              # Jembatan IPC ke renderer
-├─ index.html              # Shell HTML utama
-├─ renderer/
-│  ├─ app.js               # Entry Vue (SPA sederhana)
-│  └─ app.css              # Styling utama aplikasi
-├─ package.json
-└─ .gitignore
-
-````
-
-Struktur ini memudahkan penambahan halaman lain:
-- Dashboard
-- Settings
-- Broadcast page
-- Template manager
-- Log viewer
+- **Electron** — Desktop application packaging  
+- **Node.js** — Internal backend & WhatsApp connection  
+- **Vue 3 (SPA style)** — User interface (renderer)  
+- **whatsapp-web.js** — WhatsApp Web integration + QR login  
+- **LocalAuth** — WhatsApp login session persistence  
 
 ---
 
 ## Roadmap
 
-Tahapan pengembangan selanjutnya:
+Upcoming development stages:
 
-### 1. UI Dasar & Routing Sederhana
-- Menambahkan router sederhana untuk login → dashboard
-- Menampilkan status koneksi real-time
+### 1. Basic UI & Simple Routing
+- Add simple router for login → dashboard flow  
+- Display real-time connection status  
 
-### 2. Fitur WhatsApp
-- Kirim pesan ke 1 nomor
-- Kirim broadcast Excel
-- Template pesan
-- Jeda aman (anti-ban)
+### 2. WhatsApp Features
+- Send message to a single number  
+- Excel-based broadcast sending  
+- Message templates  
+- Safe delay (anti-ban)  
 
-### 3. Tools & Utility
-- Log aktifitas
-- Export laporan
-- Pengaturan aplikasi & folder penyimpanan
+### 3. Tools & Utilities
+- Activity logs  
+- Report export  
+- App settings & storage directory configuration  
 
-### 4. Packaging & Distribusi
-- Build installer `.exe` menggunakan `electron-builder`
-- Auto-update (opsional)
-- CI/CD untuk auto-release ke GitHub
+### 4. Packaging & Distribution
+- Build `.exe` installer using `electron-builder`  
+- Optional auto-update  
+- CI/CD for automatic GitHub releases  
 
 ---
 
-## Menjalankan Secara Lokal (Development)
+## Running Locally (Development)
 
-1. Clone repositori:
+1. Clone the repository:
 
 ```bash
 git clone https://github.com/deirrr/wassapkita.git
 cd wassapkita
 ````
 
-2. Install dependency:
+2. Install dependencies:
 
 ```bash
 npm install
 ```
 
-3. Jalankan aplikasi:
+3. Start the application:
 
 ```bash
 npm start
 ```
 
-Aplikasi akan membuka window Electron dengan halaman login QR.
+The application will launch an Electron window displaying the WhatsApp QR login page.
 
 ---
 
-## Kontribusi
+## License
 
-Kontribusi sangat terbuka untuk semua orang.
-
-Kamu bisa:
-
-* Membuat **issue** (bug, fitur baru, diskusi)
-* Mengirim **pull request**
-* Membantu dokumentasi
-* Memberi masukan terkait UX / UI dan arsitektur
-
-`CONTRIBUTING.md` akan ditambahkan setelah struktur inti stabil.
+This project is planned to use the **MIT License**.  
+The `LICENSE` file will be added in an upcoming release.
 
 ---
-
-## Lisensi
-
-Proyek ini direncanakan menggunakan lisensi **MIT**.
-File `LICENSE` akan ditambahkan pada rilis mendatang.
-
----
-
-## Kredit & Pengembang
-
-Dikembangkan oleh komunitas open-source Indonesia.
-Aplikasi ini dibuat untuk membantu bisnis, klinik, UMKM, dan para developer yang membutuhkan otomasi WhatsApp yang **etis, aman, dan mudah digunakan**.
-
