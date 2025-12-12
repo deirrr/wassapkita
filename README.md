@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/wassapkita.png" alt="Wassapkita Logo" width="180">
+</p>
+
 # Wassapkita
 
 An open-source desktop application for WhatsApp automation powered by WhatsApp Web.
