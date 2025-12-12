@@ -8,6 +8,7 @@ const qrcode = require("qrcode");
 
 let mainWindow;
 let waClient;
+let isRestarting = false;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -21,60 +22,70 @@ function createWindow() {
   });
 
   mainWindow.loadFile("index.html");
-
-  // optional: buka devtools saat dev
-  // mainWindow.webContents.openDevTools();
 }
 
-function initWhatsAppClient() {
-  waClient = new Client({
-    authStrategy: new LocalAuth(),
+function buildClient() {
+  return new Client({
+    authStrategy: new LocalAuth(), // boleh juga LocalAuth({ clientId: "wassapkita" })
     puppeteer: {
-      headless: true, // biar tidak buka browser sendiri
+      headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     },
   });
+}
 
-  waClient.on("qr", async (qr) => {
+async function restartWhatsAppClient() {
+  if (isRestarting) return;
+  isRestarting = true;
+
+  try {
+    if (waClient) {
+      try {
+        // tidak wajib, tapi membantu kalau session benar-benar logout
+        await waClient.logout();
+      } catch (_) {}
+
+      try {
+        await waClient.destroy();
+      } catch (_) {}
+    }
+
+    waClient = buildClient();
+    wireEvents(waClient);
+
+    await waClient.initialize();
+  } catch (err) {
+    console.error("Gagal restart WhatsApp client:", err);
+  } finally {
+    isRestarting = false;
+  }
+}
+
+function wireEvents(client) {
+  client.on("qr", async (qr) => {
     console.log("QR diterima dari WhatsApp");
     try {
       const dataUrl = await qrcode.toDataURL(qr);
-      if (mainWindow) {
-        mainWindow.webContents.send("wa:qr", dataUrl);
-      }
+      if (mainWindow) mainWindow.webContents.send("wa:qr", dataUrl);
     } catch (err) {
       console.error("Gagal generate QR:", err);
     }
   });
 
-  // waClient.on("ready", () => {
-  //   console.log("WhatsApp siap!");
-  //   if (mainWindow) {
-  //     mainWindow.webContents.send("wa:status", "ready");
-  //   }
-  // });
-
-  waClient.on("ready", () => {
+  client.on("ready", () => {
     console.log("WhatsApp siap!");
 
-    // ambil info akun yang login
-    const info = waClient.info || {};
-    const number = info.wid?.user || ""; // biasanya nomor tanpa tanda +
-    const pushname = info.pushname || ""; // nama profil WA kalau ada
+    const info = client.info || {};
+    const number = info.wid?.user || "";
+    const pushname = info.pushname || "";
 
     if (mainWindow) {
-      // kirim status
       mainWindow.webContents.send("wa:status", "ready");
-
-      // kirim info akun
-      mainWindow.webContents.send("wa:me", {
-        number,
-        pushname,
-      });
+      mainWindow.webContents.send("wa:me", { number, pushname });
     }
   });
 
-  waClient.on("loading_screen", (percent, message) => {
+  client.on("loading_screen", (percent, message) => {
     console.log("Loading", percent, message);
     if (mainWindow) {
       mainWindow.webContents.send(
@@ -84,27 +95,40 @@ function initWhatsAppClient() {
     }
   });
 
-  // waClient.on("authenticated", () => {
-  //   console.log("Authenticated");
-  //   if (mainWindow) {
-  //     mainWindow.webContents.send("wa:status", "authenticated");
-  //   }
-  // });
-
-  waClient.on("authenticated", () => {
+  client.on("authenticated", () => {
     console.log("Authenticated");
-    if (mainWindow) {
-      mainWindow.webContents.send("wa:status", "authenticated");
-    }
+    if (mainWindow) mainWindow.webContents.send("wa:status", "authenticated");
   });
 
-  waClient.on("disconnected", (reason) => {
+  client.on("auth_failure", (msg) => {
+    console.log("Auth failure", msg);
+    if (mainWindow)
+      mainWindow.webContents.send("wa:status", `auth_failure: ${msg}`);
+    // biasanya lebih aman restart
+    restartWhatsAppClient();
+  });
+
+  client.on("disconnected", (reason) => {
     console.log("Disconnected", reason);
+
     if (mainWindow) {
       mainWindow.webContents.send("wa:status", `disconnected: ${reason}`);
+
+      // reset UI: hilangkan info akun + QR lama (biar balik ke “menunggu QR”)
+      mainWindow.webContents.send("wa:me", null);
+      mainWindow.webContents.send("wa:qr", "");
     }
-    // bisa di-init ulang kalau mau
+
+    // kalau LOGOUT, paksa init ulang supaya QR baru keluar
+    if (String(reason).toUpperCase() === "LOGOUT") {
+      restartWhatsAppClient();
+    }
   });
+}
+
+function initWhatsAppClient() {
+  waClient = buildClient();
+  wireEvents(waClient);
 
   waClient.initialize().catch((err) => {
     console.error("Gagal inisialisasi WhatsApp client:", err);
@@ -116,9 +140,7 @@ app.whenReady().then(() => {
   initWhatsAppClient();
 
   app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
@@ -126,8 +148,5 @@ app.on("window-all-closed", () => {
   if (waClient) {
     waClient.destroy().catch(() => {});
   }
-
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
+  if (process.platform !== "darwin") app.quit();
 });

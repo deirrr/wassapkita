@@ -61,8 +61,17 @@ const LoginView = {
     },
   },
   mounted() {
+    // di dalam mounted() LoginView
+
     if (window.wassapkita?.onQr) {
       window.wassapkita.onQr((dataUrl) => {
+        // kalau main ngirim string kosong, artinya reset QR
+        if (!dataUrl) {
+          this.qrImage = "";
+          this.statusText = "Menunggu QR dari WhatsApp...";
+          return;
+        }
+
         this.qrImage = dataUrl;
         this.statusText = "QR siap di-scan.";
       });
@@ -71,11 +80,27 @@ const LoginView = {
     if (window.wassapkita?.onStatus) {
       window.wassapkita.onStatus((status) => {
         this.statusText = `Status: ${status}`;
+
+        // saat logout, reset biar siap scan ulang
+        const s = String(status || "");
+        if (s.toLowerCase().includes("disconnected: logout")) {
+          this.qrImage = "";
+          this.meNumber = "";
+          this.meName = "";
+          // statusText tetap boleh menunjukkan status terakhir
+        }
       });
     }
 
     if (window.wassapkita?.onMe) {
       window.wassapkita.onMe((me) => {
+        // kalau main ngirim null -> reset
+        if (!me) {
+          this.meNumber = "";
+          this.meName = "";
+          return;
+        }
+
         this.meNumber = me?.number || "";
         this.meName = me?.pushname || "";
         if (this.meNumber) {
