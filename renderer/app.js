@@ -6,9 +6,34 @@ import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js"
 // Blank Dashboard view
 const DashboardView = {
   name: "DashboardView",
+  props: ["me"],
+  computed: {
+    displayNumber() {
+      const n = this.me?.number || "";
+      if (!n) return "-";
+      return n.startsWith("+") ? n : `+${n}`;
+    },
+  },
   template: `
-  <h1>Dashboard</h1>
-  <p>This is a placeholder for the dashboard view.</p>
+    <div class="dash-page">
+      <div class="dash-topbar">
+        <div class="dash-left">
+          {{ displayNumber }}
+        </div>
+
+        <div class="dash-right">
+          <a href="#" class="dash-link">CONTACT</a>
+          <span class="dash-sep">|</span>
+          <a href="#" class="dash-link">BLAST</a>
+          <span class="dash-sep">|</span>
+          <a href="#" class="dash-link">CHATBOT</a>
+        </div>
+      </div>
+
+      <div class="dash-body">
+        Dashboard
+      </div>
+    </div>
   `,
 };
 
@@ -125,6 +150,7 @@ const App = {
   data() {
     return {
       currentView: "login", // future: 'login', 'dashboard', 'settings', etc.
+      me: null,
     };
   },
   computed: {
@@ -142,9 +168,11 @@ const App = {
       window.wassapkita.onMe((me) => {
         // me == null -> not logged in -> show login view
         if (!me) {
+          this.me = null;
           this.currentView = "login";
           return;
         }
+        this.me = me;
         // when we have a number, show dashboard
         const number = me?.number || "";
         if (number) this.currentView = "dashboard";
@@ -162,7 +190,7 @@ const App = {
     }
   },
   template: `
-    <component :is="currentViewComponent" />
+    <component :is="currentViewComponent" :me="me" />
   `,
 };
 
