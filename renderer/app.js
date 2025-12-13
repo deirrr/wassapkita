@@ -6,6 +6,15 @@ import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js"
 // =====================
 // Dashboard sub-pages
 // =====================
+const HomeView = {
+  name: "HomeView",
+  template: `
+    <div class="dash-body">
+      HOME
+    </div>
+  `,
+};
+
 const ContactView = {
   name: "ContactView",
   template: `
@@ -48,11 +57,12 @@ const DashboardView = {
     },
     tabComponent() {
       const map = {
+        home: "HomeView",
         contact: "ContactView",
         blast: "BlastView",
         chatbot: "ChatbotView",
       };
-      return map[this.tab] || "ContactView";
+      return map[this.tab] || "HomeView";
     },
   },
   methods: {
@@ -63,10 +73,18 @@ const DashboardView = {
   template: `
     <div class="dash-page">
       <div class="dash-topbar">
+        <!-- LEFT: WA NUMBER = HOME -->
         <div class="dash-left">
-          {{ displayNumber }}
+          <a
+            href="#"
+            class="dash-link dash-link-wa"
+            @click.prevent="setTab('home')"
+          >
+            {{ displayNumber }}
+          </a>
         </div>
 
+        <!-- RIGHT: MENU -->
         <div class="dash-right">
           <a
             href="#"
@@ -112,11 +130,7 @@ const LoginView = {
         </div>
 
         <div class="qr-box">
-          <img
-            v-if="qrImage"
-            :src="qrImage"
-            alt="QR Code"
-          />
+          <img v-if="qrImage" :src="qrImage" alt="QR Code" />
           <div v-else class="status">
             Waiting for QR from WhatsApp...
           </div>
@@ -126,10 +140,7 @@ const LoginView = {
           {{ statusText }}
         </div>
 
-        <div
-          v-if="meNumber"
-          class="me-info"
-        >
+        <div v-if="meNumber" class="me-info">
           Connected as:
           <strong>{{ formattedNumber }}</strong>
           <span v-if="meName">({{ meName }})</span>
@@ -137,7 +148,6 @@ const LoginView = {
 
         <div class="hint">
           Open <strong>WhatsApp &gt; Linked devices</strong>, then scan this code.
-          The code will refresh automatically if it expires, like WhatsApp Web.
         </div>
       </div>
     </div>
@@ -160,13 +170,11 @@ const LoginView = {
   mounted() {
     if (window.wassapkita?.onQr) {
       window.wassapkita.onQr((dataUrl) => {
-        // if main sends an empty string, it means "reset QR"
         if (!dataUrl) {
           this.qrImage = "";
           this.statusText = "Waiting for QR from WhatsApp...";
           return;
         }
-
         this.qrImage = dataUrl;
         this.statusText = "QR is ready to scan.";
       });
@@ -175,32 +183,24 @@ const LoginView = {
     if (window.wassapkita?.onStatus) {
       window.wassapkita.onStatus((status) => {
         this.statusText = `Status: ${status}`;
-
-        // when logout, reset UI to be ready for a new QR
-        const s = String(status || "");
-        if (s.toLowerCase().includes("disconnected: logout")) {
+        if (String(status).toLowerCase().includes("disconnected: logout")) {
           this.qrImage = "";
           this.meNumber = "";
           this.meName = "";
-          // keep statusText showing the last status
         }
       });
     }
 
     if (window.wassapkita?.onMe) {
       window.wassapkita.onMe((me) => {
-        // if main sends null -> reset
         if (!me) {
           this.meNumber = "";
           this.meName = "";
           return;
         }
-
         this.meNumber = me?.number || "";
         this.meName = me?.pushname || "";
-        if (this.meNumber) {
-          this.statusText = "Connected to WhatsApp.";
-        }
+        if (this.meNumber) this.statusText = "Connected to WhatsApp.";
       });
     }
   },
@@ -211,49 +211,38 @@ const LoginView = {
 // =====================
 const App = {
   name: "App",
-  components: { LoginView },
   data() {
     return {
-      currentView: "login", // future: 'login', 'dashboard', 'settings', etc.
+      currentView: "login",
       me: null,
-      dashboardTab: "contact",
+      dashboardTab: "home",
     };
   },
   computed: {
     currentViewComponent() {
-      const map = {
-        login: "LoginView",
-        dashboard: "DashboardView",
-      };
-      return map[this.currentView] || "LoginView";
+      return this.currentView === "dashboard" ? "DashboardView" : "LoginView";
     },
   },
   mounted() {
-    // switch view based on whatsapp session state (from main process)
     if (window.wassapkita?.onMe) {
       window.wassapkita.onMe((me) => {
-        // me == null -> not logged in -> show login view
         if (!me) {
           this.me = null;
           this.currentView = "login";
-          this.dashboardTab = "contact";
+          this.dashboardTab = "home";
           return;
         }
         this.me = me;
-        // when we have a number, show dashboard
-        const number = me?.number || "";
-        if (number) this.currentView = "dashboard";
+        if (me?.number) this.currentView = "dashboard";
       });
     }
 
-    // optional extra guard for LOGOUT status
     if (window.wassapkita?.onStatus) {
       window.wassapkita.onStatus((status) => {
-        const s = String(status || "").toLowerCase();
-        if (s.includes("disconnected: logout")) {
+        if (String(status).toLowerCase().includes("disconnected: logout")) {
           this.me = null;
           this.currentView = "login";
-          this.dashboardTab = "contact";
+          this.dashboardTab = "home";
         }
       });
     }
@@ -271,6 +260,7 @@ const App = {
 createApp(App)
   .component("LoginView", LoginView)
   .component("DashboardView", DashboardView)
+  .component("HomeView", HomeView)
   .component("ContactView", ContactView)
   .component("BlastView", BlastView)
   .component("ChatbotView", ChatbotView)
