@@ -138,3 +138,9 @@ body {
   padding: 18px;
   font-size: 18px;
 }
+
+.dash-link-active {
+  opacity: 1;
+  font-weight: 700;
+  text-decoration: underline;
+}

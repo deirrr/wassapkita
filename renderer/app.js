@@ -3,15 +3,61 @@
 
 import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js";
 
-// Blank Dashboard view
+// =====================
+// Dashboard sub-pages
+// =====================
+const ContactView = {
+  name: "ContactView",
+  template: `
+    <div class="dash-body">
+      CONTACT
+    </div>
+  `,
+};
+
+const BlastView = {
+  name: "BlastView",
+  template: `
+    <div class="dash-body">
+      BLAST
+    </div>
+  `,
+};
+
+const ChatbotView = {
+  name: "ChatbotView",
+  template: `
+    <div class="dash-body">
+      CHATBOT
+    </div>
+  `,
+};
+
+// =====================
+// Dashboard view
+// =====================
 const DashboardView = {
   name: "DashboardView",
-  props: ["me"],
+  props: ["me", "tab"],
+  emits: ["tab-change"],
   computed: {
     displayNumber() {
       const n = this.me?.number || "";
       if (!n) return "-";
       return n.startsWith("+") ? n : `+${n}`;
+    },
+    tabComponent() {
+      const map = {
+        contact: "ContactView",
+        blast: "BlastView",
+        chatbot: "ChatbotView",
+      };
+      return map[this.tab] || "ContactView";
+    },
+  },
+  methods: {
+    setTab(next) {
+      this.$emit("tab-change", next);
     },
   },
   template: `
@@ -22,22 +68,39 @@ const DashboardView = {
         </div>
 
         <div class="dash-right">
-          <a href="#" class="dash-link">CONTACT</a>
+          <a
+            href="#"
+            class="dash-link"
+            :class="{ 'dash-link-active': tab === 'contact' }"
+            @click.prevent="setTab('contact')"
+          >CONTACT</a>
           <span class="dash-sep">|</span>
-          <a href="#" class="dash-link">BLAST</a>
+
+          <a
+            href="#"
+            class="dash-link"
+            :class="{ 'dash-link-active': tab === 'blast' }"
+            @click.prevent="setTab('blast')"
+          >BLAST</a>
           <span class="dash-sep">|</span>
-          <a href="#" class="dash-link">CHATBOT</a>
+
+          <a
+            href="#"
+            class="dash-link"
+            :class="{ 'dash-link-active': tab === 'chatbot' }"
+            @click.prevent="setTab('chatbot')"
+          >CHATBOT</a>
         </div>
       </div>
 
-      <div class="dash-body">
-        Dashboard
-      </div>
+      <component :is="tabComponent" />
     </div>
   `,
 };
 
+// =====================
 // Login / WhatsApp QR view
+// =====================
 const LoginView = {
   name: "LoginView",
   template: `
@@ -143,7 +206,9 @@ const LoginView = {
   },
 };
 
-// App shell (later you can switch views: login, dashboard, etc.)
+// =====================
+// App shell
+// =====================
 const App = {
   name: "App",
   components: { LoginView },
@@ -151,6 +216,7 @@ const App = {
     return {
       currentView: "login", // future: 'login', 'dashboard', 'settings', etc.
       me: null,
+      dashboardTab: "contact",
     };
   },
   computed: {
@@ -170,6 +236,7 @@ const App = {
         if (!me) {
           this.me = null;
           this.currentView = "login";
+          this.dashboardTab = "contact";
           return;
         }
         this.me = me;
@@ -184,17 +251,27 @@ const App = {
       window.wassapkita.onStatus((status) => {
         const s = String(status || "").toLowerCase();
         if (s.includes("disconnected: logout")) {
+          this.me = null;
           this.currentView = "login";
+          this.dashboardTab = "contact";
         }
       });
     }
   },
   template: `
-    <component :is="currentViewComponent" :me="me" />
+    <component
+      :is="currentViewComponent"
+      :me="me"
+      :tab="dashboardTab"
+      @tab-change="dashboardTab = $event"
+    />
   `,
 };
 
 createApp(App)
   .component("LoginView", LoginView)
   .component("DashboardView", DashboardView)
+  .component("ContactView", ContactView)
+  .component("BlastView", BlastView)
+  .component("ChatbotView", ChatbotView)
   .mount("#app");
