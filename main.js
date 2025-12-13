@@ -1,5 +1,4 @@
 // main.js
-// Entry utama aplikasi Electron Wassapkita + integrasi whatsapp-web.js (QR only)
 
 const { app, BrowserWindow } = require("electron");
 const path = require("path");
@@ -9,6 +8,11 @@ const qrcode = require("qrcode");
 let mainWindow;
 let waClient;
 let isRestarting = false;
+
+// last state for avoiding sending duplicate data to renderer
+let lastStatus = "";
+let lastMe = null;
+let lastQr = "";
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -22,6 +26,15 @@ function createWindow() {
   });
 
   mainWindow.loadFile("index.html");
+
+  mainWindow.webContents.on("did-finish-load", () => {
+    setTimeout(() => {
+      // send last known state for renderer sync (on reload, etc)
+      mainWindow.webContents.send("wa:status", lastStatus || "booting");
+      mainWindow.webContents.send("wa:me", lastMe);
+      mainWindow.webContents.send("wa:qr", lastQr);
+    }, 200); // delay to ensure renderer listener are ready
+  });
 }
 
 function buildClient() {
@@ -66,6 +79,7 @@ function wireEvents(client) {
     console.log("QR diterima dari WhatsApp");
     try {
       const dataUrl = await qrcode.toDataURL(qr);
+      lastQr = dataUrl;
       if (mainWindow) mainWindow.webContents.send("wa:qr", dataUrl);
     } catch (err) {
       console.error("Gagal generate QR:", err);
@@ -79,13 +93,19 @@ function wireEvents(client) {
     const number = info.wid?.user || "";
     const pushname = info.pushname || "";
 
+    lastMe = { number, pushname };
+    lastStatus = "ready";
+    lastQr = ""; // QR does not need to be shown anymore since logged in
+
     if (mainWindow) {
       mainWindow.webContents.send("wa:status", "ready");
       mainWindow.webContents.send("wa:me", { number, pushname });
+      mainWindow.webContents.send("wa:qr", ""); // clear QR in UI
     }
   });
 
   client.on("loading_screen", (percent, message) => {
+    lastStatus = `loading ${percent}% - ${message}`;
     console.log("Loading", percent, message);
     if (mainWindow) {
       mainWindow.webContents.send(
@@ -96,11 +116,13 @@ function wireEvents(client) {
   });
 
   client.on("authenticated", () => {
+    lastStatus = "authenticated";
     console.log("Authenticated");
     if (mainWindow) mainWindow.webContents.send("wa:status", "authenticated");
   });
 
   client.on("auth_failure", (msg) => {
+    lastStatus = `auth_failure: ${msg}`;
     console.log("Auth failure", msg);
     if (mainWindow)
       mainWindow.webContents.send("wa:status", `auth_failure: ${msg}`);
@@ -110,6 +132,9 @@ function wireEvents(client) {
 
   client.on("disconnected", (reason) => {
     console.log("Disconnected", reason);
+    lastStatus = `disconnected: ${reason}`;
+    lastMe = null;
+    lastQr = "";
 
     if (mainWindow) {
       mainWindow.webContents.send("wa:status", `disconnected: ${reason}`);
