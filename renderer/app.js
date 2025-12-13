@@ -1,9 +1,9 @@
 // renderer/app.js
-// Entry Vue untuk Wassapkita (struktur ala SPA sederhana)
+// Vue entry for Wassapkita (simple SPA-like structure)
 
 import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js";
 
-// Halaman login / QR WhatsApp
+// Login / WhatsApp QR view
 const LoginView = {
   name: "LoginView",
   template: `
@@ -11,7 +11,7 @@ const LoginView = {
       <div class="card">
         <div class="title">Wassapkita</div>
         <div class="subtitle">
-          Scan QR berikut dengan aplikasi WhatsApp kamu.
+          Scan this QR code with your WhatsApp app.
         </div>
 
         <div class="qr-box">
@@ -21,7 +21,7 @@ const LoginView = {
             alt="QR Code"
           />
           <div v-else class="status">
-            Menunggu QR dari WhatsApp...
+            Waiting for QR from WhatsApp...
           </div>
         </div>
 
@@ -33,14 +33,14 @@ const LoginView = {
           v-if="meNumber"
           class="me-info"
         >
-          Terhubung sebagai:
+          Connected as:
           <strong>{{ formattedNumber }}</strong>
           <span v-if="meName">({{ meName }})</span>
         </div>
 
         <div class="hint">
-          Buka <strong>WhatsApp &gt; Perangkat tertaut</strong>, lalu scan kode ini.
-          Kode akan otomatis berganti jika kedaluwarsa, seperti di WhatsApp Web.
+          Open <strong>WhatsApp &gt; Linked devices</strong>, then scan this code.
+          The code will refresh automatically if it expires, like WhatsApp Web.
         </div>
       </div>
     </div>
@@ -48,7 +48,7 @@ const LoginView = {
   data() {
     return {
       qrImage: "",
-      statusText: "Menunggu QR dari WhatsApp...",
+      statusText: "Waiting for QR from WhatsApp...",
       meNumber: "",
       meName: "",
     };
@@ -61,19 +61,17 @@ const LoginView = {
     },
   },
   mounted() {
-    // di dalam mounted() LoginView
-
     if (window.wassapkita?.onQr) {
       window.wassapkita.onQr((dataUrl) => {
-        // kalau main ngirim string kosong, artinya reset QR
+        // if main sends an empty string, it means "reset QR"
         if (!dataUrl) {
           this.qrImage = "";
-          this.statusText = "Menunggu QR dari WhatsApp...";
+          this.statusText = "Waiting for QR from WhatsApp...";
           return;
         }
 
         this.qrImage = dataUrl;
-        this.statusText = "QR siap di-scan.";
+        this.statusText = "QR is ready to scan.";
       });
     }
 
@@ -81,20 +79,20 @@ const LoginView = {
       window.wassapkita.onStatus((status) => {
         this.statusText = `Status: ${status}`;
 
-        // saat logout, reset biar siap scan ulang
+        // when logout, reset UI to be ready for a new QR
         const s = String(status || "");
         if (s.toLowerCase().includes("disconnected: logout")) {
           this.qrImage = "";
           this.meNumber = "";
           this.meName = "";
-          // statusText tetap boleh menunjukkan status terakhir
+          // keep statusText showing the last status
         }
       });
     }
 
     if (window.wassapkita?.onMe) {
       window.wassapkita.onMe((me) => {
-        // kalau main ngirim null -> reset
+        // if main sends null -> reset
         if (!me) {
           this.meNumber = "";
           this.meName = "";
@@ -104,20 +102,20 @@ const LoginView = {
         this.meNumber = me?.number || "";
         this.meName = me?.pushname || "";
         if (this.meNumber) {
-          this.statusText = "Terhubung ke WhatsApp.";
+          this.statusText = "Connected to WhatsApp.";
         }
       });
     }
   },
 };
 
-// App shell, nanti bisa ganti-ganti view: login, dashboard, dst.
+// App shell (later you can switch views: login, dashboard, etc.)
 const App = {
   name: "App",
   components: { LoginView },
   data() {
     return {
-      currentView: "login", // ke depan bisa: 'login', 'dashboard', 'settings', dll.
+      currentView: "login", // future: 'login', 'dashboard', 'settings', etc.
     };
   },
   computed: {
