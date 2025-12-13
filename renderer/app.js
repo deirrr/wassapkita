@@ -3,6 +3,15 @@
 
 import { createApp } from "https://unpkg.com/vue@3/dist/vue.esm-browser.prod.js";
 
+// Blank Dashboard view
+const DashboardView = {
+  name: "DashboardView",
+  template: `
+  <h1>Dashboard</h1>
+  <p>This is a placeholder for the dashboard view.</p>
+  `,
+};
+
 // Login / WhatsApp QR view
 const LoginView = {
   name: "LoginView",
@@ -122,13 +131,42 @@ const App = {
     currentViewComponent() {
       const map = {
         login: "LoginView",
+        dashboard: "DashboardView",
       };
       return map[this.currentView] || "LoginView";
     },
+  },
+  mounted() {
+    // switch view based on whatsapp session state (from main process)
+    if (window.wassapkita?.onMe) {
+      window.wassapkita.onMe((me) => {
+        // me == null -> not logged in -> show login view
+        if (!me) {
+          this.currentView = "login";
+          return;
+        }
+        // when we have a number, show dashboard
+        const number = me?.number || "";
+        if (number) this.currentView = "dashboard";
+      });
+    }
+
+    // optional extra guard for LOGOUT status
+    if (window.wassapkita?.onStatus) {
+      window.wassapkita.onStatus((status) => {
+        const s = String(status || "").toLowerCase();
+        if (s.includes("disconnected: logout")) {
+          this.currentView = "login";
+        }
+      });
+    }
   },
   template: `
     <component :is="currentViewComponent" />
   `,
 };
 
-createApp(App).component("LoginView", LoginView).mount("#app");
+createApp(App)
+  .component("LoginView", LoginView)
+  .component("DashboardView", DashboardView)
+  .mount("#app");
