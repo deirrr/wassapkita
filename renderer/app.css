@@ -148,3 +148,22 @@ body {
 .dash-link-wa {
   font-weight: 600;
 }
+
+.btn-primary {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 0;
+  cursor: pointer;
+  background: #2563eb;
+  color: #fff;
+  font-size: 13px;
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.small-status {
+  font-size: 12px;
+  opacity: 0.75;
+  word-break: break-word;
+}
