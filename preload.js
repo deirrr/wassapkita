@@ -1,5 +1,5 @@
 // preload.js
-// Jembatan antara Electron main dan frontend (index.html)
+// bridge between Electron main and frontend (index.html)
 
 const { contextBridge, ipcRenderer } = require("electron");
 
@@ -26,5 +26,10 @@ contextBridge.exposeInMainWorld("wassapkita", {
         callback(me);
       }
     });
+  },
+
+  // ADDED: export contacts to Excel (.xlsx)
+  exportContactsXlsx: () => {
+    return ipcRenderer.invoke("contacts:exportXlsx");
   },
 });
