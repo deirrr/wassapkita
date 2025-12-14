@@ -187,21 +187,34 @@ function initWhatsAppClient() {
 // =====================
 // XLSX Export (Contacts Backup)
 // =====================
+function guessMyCountryPrefix(msisdn) {
+  const s = String(msisdn || "").replace(/\D/g, "");
+  if (!s) return "";
+
+  // heuristik aman (cukup untuk filter "asing" yang kamu temui)
+  if (s.startsWith("62")) return "62"; // Indonesia
+  if (s.startsWith("1")) return "1"; // US/CA
+
+  // fallback: ambil 2 digit awal
+  return s.slice(0, 2);
+}
+
 async function exportContactsToXlsxInteractive() {
   if (!waClient) throw new Error("WhatsApp client belum siap.");
   if (!lastMe?.number)
     throw new Error("WhatsApp belum terhubung. Silakan login dulu.");
 
+  const myCountryPrefix = guessMyCountryPrefix(lastMe?.number);
+
   const contacts = await waClient.getContacts();
 
-  // hanya kontak individual (@c.us), skip group (@g.us) dan lainnya
+  // hanya kontak individual (@c.us), dan yang dianggap "my contact"
   const userContacts = (contacts || []).filter((c) => {
     const idStr = c?.id?._serialized || "";
     if (!idStr.endsWith("@c.us")) return false;
-
-    // hanya kontak yang tersimpan (bukan participant hasil grup)
-    // whatsapp-web.js biasanya expose sebagai boolean
-    return c?.isMyContact === true;
+    if (c?.isMyContact !== true) return false;
+    if (!String(c?.name || "").trim()) return false; // butuh nama phonebook
+    return true;
   });
 
   // dedup by number
@@ -210,17 +223,17 @@ async function exportContactsToXlsxInteractive() {
     const no = (c?.id?.user || "").replace(/\D/g, "");
     if (!no) continue;
 
-    // skip nomor sendiri
+    // skip kontak diri sendiri
     if (lastMe?.number && String(no) === String(lastMe.number)) continue;
 
-    const name =
-      c?.name ||
-      c?.pushname ||
-      c?.verifiedName ||
-      c?.notifyName ||
-      c?.shortName ||
-      c?.formattedName ||
-      (no ? `+${no}` : "");
+    // FILTER: hanya 1 negara dengan akun WA yang login (buang nomor asing yang "nyasar")
+    if (myCountryPrefix && !String(no).startsWith(myCountryPrefix)) continue;
+
+    // STRICT: hanya kontak yang benar-benar tersimpan (nama phonebook)
+    const savedName = (c?.name || "").trim();
+    if (!savedName) continue;
+
+    const name = savedName || (c?.verifiedName || "").trim();
 
     if (!map.has(no)) map.set(no, name);
   }
@@ -258,6 +271,8 @@ async function exportContactsToXlsxInteractive() {
   sheet.getRow(1).font = { bold: true };
 
   for (const r of rows) sheet.addRow(r);
+
+  // pastikan no_wa jadi text (tidak jadi scientific notation)
   sheet.getColumn("no_wa").numFmt = "@";
 
   await workbook.xlsx.writeFile(result.filePath);
