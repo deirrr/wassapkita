@@ -1,11 +1,12 @@
 // main.js
 // Electron main + whatsapp-web.js with LocalAuth + stable Puppeteer launch (Windows-friendly)
 
-const { app, BrowserWindow } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const path = require("path");
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const qrcode = require("qrcode");
 const puppeteer = require("puppeteer"); // IMPORTANT: install `puppeteer` (not puppeteer-core)
+const ExcelJS = require("exceljs");
 
 let mainWindow;
 let waClient;
@@ -183,8 +184,90 @@ function initWhatsAppClient() {
   });
 }
 
+// =====================
+// XLSX Export (Contacts Backup)
+// =====================
+async function exportContactsToXlsxInteractive() {
+  if (!waClient) throw new Error("WhatsApp client belum siap.");
+  if (!lastMe?.number)
+    throw new Error("WhatsApp belum terhubung. Silakan login dulu.");
+
+  const contacts = await waClient.getContacts();
+
+  // hanya kontak individual (@c.us), skip group (@g.us) dan lainnya
+  const userContacts = (contacts || []).filter((c) => {
+    const idStr = c?.id?._serialized || "";
+    return idStr.endsWith("@c.us");
+  });
+
+  // dedup by number
+  const map = new Map(); // key: no_wa, value: name
+  for (const c of userContacts) {
+    const no = (c?.id?.user || "").replace(/\D/g, "");
+    if (!no) continue;
+
+    // skip nomor sendiri
+    if (lastMe?.number && String(no) === String(lastMe.number)) continue;
+
+    const name =
+      c?.name || c?.pushname || c?.verifiedName || c?.shortName || "";
+
+    if (!map.has(no)) map.set(no, name);
+  }
+
+  const rows = Array.from(map.entries())
+    .map(([no_wa, name]) => ({ name, no_wa }))
+    .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
+  const defaultFileName = `wassapkita-contacts-${new Date()
+    .toISOString()
+    .slice(0, 10)}.xlsx`;
+
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: "Simpan Backup Kontak",
+    defaultPath: defaultFileName,
+    filters: [{ name: "Excel Workbook", extensions: ["xlsx"] }],
+  });
+
+  if (result.canceled || !result.filePath) {
+    return { ok: true, cancelled: true };
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "Wassapkita";
+  workbook.created = new Date();
+
+  const sheet = workbook.addWorksheet("contacts");
+
+  sheet.columns = [
+    { header: "name", key: "name", width: 32 },
+    { header: "no_wa", key: "no_wa", width: 18 },
+  ];
+
+  // header bold
+  sheet.getRow(1).font = { bold: true };
+
+  for (const r of rows) sheet.addRow(r);
+
+  await workbook.xlsx.writeFile(result.filePath);
+
+  return {
+    ok: true,
+    cancelled: false,
+    filePath: result.filePath,
+    count: rows.length,
+  };
+}
+
+function registerIpcHandlers() {
+  ipcMain.handle("contacts:exportXlsx", async () => {
+    return exportContactsToXlsxInteractive();
+  });
+}
+
 app.whenReady().then(() => {
   createWindow();
+  registerIpcHandlers();
   initWhatsAppClient();
 
   app.on("activate", () => {
