@@ -18,7 +18,8 @@ Developers can contribute directly through this repository.
 - **Node.js** — Internal backend & WhatsApp connection  
 - **Vue 3 (SPA style)** — User interface (renderer)  
 - **whatsapp-web.js** — WhatsApp Web integration + QR login  
-- **LocalAuth** — WhatsApp login session persistence  
+- **LocalAuth** — WhatsApp login session persistence
+- **ExcelJs** — used to export WhatsApp contact backups to Excel (.xlsx) files
 
 ---
 
@@ -31,10 +32,13 @@ Upcoming development stages:
 - Display real-time connection status  
 
 ### 2. WhatsApp Features
-- Send message to a single number  
-- Excel-based broadcast sending  
+- Send messages to a single number  
+- Excel-based broadcast messaging  
 - Message templates  
-- Safe delay (anti-ban)  
+- Safe delay mechanism (anti-ban)  
+- Contact management (backup, import, and local address book)  
+- Controlled broadcast (blast) messaging with preview and confirmation  
+- Rule-based chatbot (keyword-based, non-AI)
 
 ### 3. Tools & Utilities
 - Activity logs  
