@@ -197,7 +197,11 @@ async function exportContactsToXlsxInteractive() {
   // hanya kontak individual (@c.us), skip group (@g.us) dan lainnya
   const userContacts = (contacts || []).filter((c) => {
     const idStr = c?.id?._serialized || "";
-    return idStr.endsWith("@c.us");
+    if (!idStr.endsWith("@c.us")) return false;
+
+    // hanya kontak yang tersimpan (bukan participant hasil grup)
+    // whatsapp-web.js biasanya expose sebagai boolean
+    return c?.isMyContact === true;
   });
 
   // dedup by number
