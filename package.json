@@ -1,7 +1,7 @@
 {
   "name": "wassapkita",
   "version": "0.1.0",
-  "description": "Aplikasi desktop open-source untuk otomasi WhatsApp berbasis WhatsApp Web. Dibangun dengan Electron, Node.js, dan Vue.",
+  "description": "An open-source desktop application for WhatsApp automation based on WhatsApp Web. Built with Electron, Node.js, and Vue.",
   "main": "main.js",
   "scripts": {
     "start": "electron ."
@@ -15,6 +15,6 @@
     "exceljs": "^4.4.0",
     "puppeteer": "^24.33.0",
     "qrcode": "^1.5.4",
-    "whatsapp-web.js": "^1.34.2"
+    "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js#5438c2042b9b42370c0acef21e511c08bb462983"
   }
 }
