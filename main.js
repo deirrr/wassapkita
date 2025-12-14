@@ -210,7 +210,13 @@ async function exportContactsToXlsxInteractive() {
     if (lastMe?.number && String(no) === String(lastMe.number)) continue;
 
     const name =
-      c?.name || c?.pushname || c?.verifiedName || c?.shortName || "";
+      c?.name ||
+      c?.pushname ||
+      c?.verifiedName ||
+      c?.notifyName ||
+      c?.shortName ||
+      c?.formattedName ||
+      (no ? `+${no}` : "");
 
     if (!map.has(no)) map.set(no, name);
   }
@@ -248,6 +254,7 @@ async function exportContactsToXlsxInteractive() {
   sheet.getRow(1).font = { bold: true };
 
   for (const r of rows) sheet.addRow(r);
+  sheet.getColumn("no_wa").numFmt = "@";
 
   await workbook.xlsx.writeFile(result.filePath);
 
