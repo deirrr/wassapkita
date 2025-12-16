@@ -4,12 +4,43 @@
   "description": "An open-source desktop application for WhatsApp automation based on WhatsApp Web. Built with Electron, Node.js, and Vue.",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.wassapkita.app",
+    "productName": "Wassapkita",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "renderer/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "asarUnpack": [
+      "node_modules/puppeteer/.local-chromium/**",
+      "node_modules/puppeteer/.local-chromium-win32/**",
+      "node_modules/puppeteer/.local-chromium-win64/**"
+    ]
   },
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^33.0.0"
+    "electron": "^33.0.0",
+    "electron-builder": "^26.0.12"
   },
   "dependencies": {
     "exceljs": "^4.4.0",
