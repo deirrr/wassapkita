@@ -134,7 +134,6 @@ body {
   display: flex;
   flex-direction: column;
 
-  /* Background: putih-abu dengan sentuhan hijau halus */
   background: radial-gradient(
       900px 700px at 15% 10%,
       rgba(34, 197, 94, 0.12),
@@ -148,7 +147,7 @@ body {
     linear-gradient(180deg, var(--dash-bg-1), var(--dash-bg-2));
 }
 
-/* Topbar glass */
+/* Topbar: gradient + glass */
 .dash-topbar {
   height: 56px;
   padding: 0 16px;
@@ -156,18 +155,22 @@ body {
   align-items: center;
   justify-content: space-between;
 
-  background: rgba(255, 255, 255, 0.7);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(241, 245, 249, 0.92) 45%,
+    rgba(220, 252, 231, 0.88) 120%
+  );
   border-bottom: 1px solid var(--dash-border);
   backdrop-filter: blur(10px);
-  box-shadow: 0 6px 18px rgba(2, 6, 23, 0.06);
+  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.06);
 }
 
 .dash-left {
   font-size: 13px;
-  opacity: 0.95;
+  opacity: 0.98;
 }
 
-/* Menu kanan */
 .dash-right {
   display: flex;
   align-items: center;
@@ -175,14 +178,17 @@ body {
   font-size: 12px;
 }
 
-/* Link */
+/* Link: lebih modern + icon row */
 .dash-link {
   color: var(--dash-text);
   text-decoration: none;
-  opacity: 0.78;
+  opacity: 0.82;
   padding: 8px 10px;
   border-radius: 10px;
   transition: all 140ms ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .dash-link:hover {
@@ -190,40 +196,27 @@ body {
   background: rgba(15, 23, 42, 0.06);
 }
 
+.dash-link-active {
+  opacity: 1;
+  font-weight: 700;
+  text-decoration: none;
+  background: rgba(34, 197, 94, 0.14);
+  border: 1px solid rgba(34, 197, 94, 0.22);
+}
+
 .dash-sep {
   opacity: 0.25;
 }
 
-.dash-link-active {
-  opacity: 1;
-  font-weight: 700;
-
-  /* underline diganti pill biar modern */
-  text-decoration: none;
-  background: rgba(34, 197, 94, 0.14);
-  border: 1px solid rgba(34, 197, 94, 0.25);
-}
-
 .dash-link-wa {
-  font-weight: 700;
-  position: relative;
+  font-weight: 800;
 }
 
-/* kecilin aksen hijau di nomor WA */
-.dash-link-wa::after {
-  content: "";
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 5px;
-  height: 2px;
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    rgba(34, 197, 94, 0.75),
-    rgba(34, 197, 94, 0)
-  );
-  opacity: 0.35;
+/* icon kecil */
+.icon-12 {
+  width: 14px;
+  height: 14px;
+  opacity: 0.9;
 }
 
 /* Body */
@@ -232,7 +225,6 @@ body {
   font-size: 18px;
 }
 
-/* Card container untuk konten Home/Blast/Chatbot (kalau kamu pakai div max-width) */
 .dash-body > div {
   background: var(--dash-card);
   border: 1px solid var(--dash-border);
@@ -242,39 +234,28 @@ body {
   backdrop-filter: blur(8px);
 }
 
-/* Button utama: biru dengan sentuhan hijau */
+/* tombol flat (tanpa glossy/shadow) */
 .btn-primary {
   padding: 10px 14px;
   border-radius: 12px;
-  border: 1px solid rgba(34, 197, 94, 0.22);
+  border: 1px solid rgba(15, 23, 42, 0.14);
   cursor: pointer;
-  color: #fff;
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--dash-text);
   font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.2px;
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.18);
-
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 45%, #16a34a 110%);
-  transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+  transition: background 120ms ease, opacity 120ms ease;
 }
 
 .btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.22);
-}
-
-.btn-primary:active {
-  transform: translateY(0px);
+  background: rgba(15, 23, 42, 0.1);
 }
 
 .btn-primary:disabled {
   opacity: 0.55;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
 }
 
-/* Status kecil */
 .small-status {
   font-size: 12px;
   opacity: 0.78;
