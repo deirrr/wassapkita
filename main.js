@@ -1,7 +1,7 @@
 // main.js
 // Electron main + whatsapp-web.js with LocalAuth + stable Puppeteer launch (Windows-friendly)
 
-const { app, BrowserWindow, ipcMain, dialog } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, Menu } = require("electron");
 const path = require("path");
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const qrcode = require("qrcode");
@@ -21,12 +21,16 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 900,
     height: 600,
+    autoHideMenuBar: true, // hide File/Edit/View menu bar (Windows/Linux)
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
     },
   });
+
+  // extra safety: ensure it's not visible even when pressing Alt
+  mainWindow.setMenuBarVisibility(false);
 
   mainWindow.loadFile("index.html");
 
@@ -292,6 +296,9 @@ function registerIpcHandlers() {
 }
 
 app.whenReady().then(() => {
+  // remove default application menu (File/Edit/View/Help, etc.)
+  Menu.setApplicationMenu(null);
+
   createWindow();
   registerIpcHandlers();
   initWhatsAppClient();
