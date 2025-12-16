@@ -26,7 +26,7 @@ function createWindow() {
     width: 900,
     height: 600,
     autoHideMenuBar: true, // hide File/Edit/View menu bar (Windows/Linux)
-    icon: path.join(__dirname, "assets", "icon.ico"),
+    icon: path.join(__dirname, "build", "icon.ico"),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
