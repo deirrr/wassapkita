@@ -10,25 +10,16 @@ const HomeView = {
   name: "HomeView",
   template: `
     <div class="dash-body">
-      HOME
-    </div>
-  `,
-};
-
-const ContactView = {
-  name: "ContactView",
-  template: `
-    <div class="dash-body">
       <div style="max-width:720px;">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
-          <div style="font-size:18px; font-weight:700;">CONTACT</div>
+          <div style="font-size:18px; font-weight:700;">HOME</div>
 
           <button
             class="btn-primary"
             :disabled="isExporting"
             @click="doExport"
           >
-            {{ isExporting ? "Memproses..." : "Backup Kontak (Excel)" }}
+            {{ isExporting ? "Memproses..." : "Export Contact Wa to Excel" }}
           </button>
         </div>
 
@@ -42,14 +33,14 @@ const ContactView = {
     return {
       isExporting: false,
       statusText:
-        "Klik tombol Backup untuk menyimpan kontak menjadi file .xlsx.",
+        "Klik tombol Export untuk menyimpan kontak menjadi file .xlsx.",
     };
   },
   methods: {
     async doExport() {
       if (!window.wassapkita?.exportContactsXlsx) {
         this.statusText =
-          "Fitur backup belum tersedia (preload belum terpasang).";
+          "Fitur export belum tersedia (preload belum terpasang).";
         return;
       }
 
@@ -66,7 +57,7 @@ const ContactView = {
             res.filePath
           }`;
         } else {
-          this.statusText = "Gagal backup kontak.";
+          this.statusText = "Gagal export kontak.";
         }
       } catch (e) {
         this.statusText = `Error: ${e?.message || e}`;
@@ -111,7 +102,6 @@ const DashboardView = {
     tabComponent() {
       const map = {
         home: "HomeView",
-        contact: "ContactView",
         blast: "BlastView",
         chatbot: "ChatbotView",
       };
@@ -139,14 +129,6 @@ const DashboardView = {
 
         <!-- RIGHT: MENU -->
         <div class="dash-right">
-          <a
-            href="#"
-            class="dash-link"
-            :class="{ 'dash-link-active': tab === 'contact' }"
-            @click.prevent="setTab('contact')"
-          >CONTACT</a>
-          <span class="dash-sep">|</span>
-
           <a
             href="#"
             class="dash-link"
@@ -314,7 +296,6 @@ createApp(App)
   .component("LoginView", LoginView)
   .component("DashboardView", DashboardView)
   .component("HomeView", HomeView)
-  .component("ContactView", ContactView)
   .component("BlastView", BlastView)
   .component("ChatbotView", ChatbotView)
   .mount("#app");
