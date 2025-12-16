@@ -17,11 +17,16 @@ let lastStatus = "";
 let lastMe = null;
 let lastQr = "";
 
+if (process.platform === "win32") {
+  app.setAppUserModelId("com.wassapkita.app");
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 900,
     height: 600,
     autoHideMenuBar: true, // hide File/Edit/View menu bar (Windows/Linux)
+    icon: path.join(__dirname, "assets", "icon.ico"),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
