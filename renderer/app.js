@@ -79,11 +79,41 @@ const BlastView = {
         { key: "setting", label: "3 Setting" },
         { key: "send", label: "4 Send" },
       ],
+
+      // upload state
+      contactFile: null,
+      cpntactFileName: "",
+      uploadError: "",
     };
   },
   methods: {
     setStep(k) {
       this.step = k;
+    },
+
+    openContactPicker() {
+      this.uploadError = "";
+      this.$refs.contactFileInput.click();
+    },
+
+    onContactFileChange(e) {
+      this.uploadError = "";
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const name = (file.name || "").toLowerCase();
+      const isExcel = name.endsWith(".xlsx") || name.endsWith(".xls");
+
+      if (!isExcel) {
+        this.contactFile = null;
+        this.cpntactFileName = "";
+        this.uploadError =
+          "Unsupported file type. Only .xlsx and .xls are supported";
+        e.target.value = "";
+        return;
+      }
+      this.contactFile = file;
+      this.cpntactFileName = file.name;
     },
   },
   template: `
@@ -104,7 +134,29 @@ const BlastView = {
       <div class="blast-step-content">
         <div v-if="step === 'upload'" class="blast-panel">
           <div class="blast-title">Upload Contact</div>
-          <div class="blast-subtitle">ini adalah halaman upload</div>
+          <div class="blast-subtitle">Unggah file Excel berisi daftar kontak.</div>
+
+          <input
+            ref="contactInput"
+            type="file"
+            accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+            style="display:none"
+            @change="onContactFileChange"
+          />
+
+          <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <button type="button" class="btn" @click="openContactPicker">
+              Upload Contact (Excel)
+            </button>
+
+            <div v-if="contactFileName" class="blast-subtitle" style="margin:0;">
+              File: {{ contactFileName }}
+            </div>
+          </div>
+
+          <div v-if="uploadError" class="blast-subtitle" style="margin-top:10px; color:#fca5a5;">
+            {{ uploadError }}
+          </div>
         </div>
 
         <div v-else-if="step === 'template'" class="blast-panel">
