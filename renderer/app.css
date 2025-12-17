@@ -304,6 +304,25 @@ body {
   min-height: 240px; /* placeholder biar layout enak */
 }
 
+.blast-panel {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.blast-title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.blast-subtitle {
+  margin-top: 6px;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
 /* Responsive */
 @media (max-width: 520px) {
   .card {

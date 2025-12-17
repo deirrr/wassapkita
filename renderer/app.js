@@ -101,8 +101,27 @@ const BlastView = {
         </button>
       </div>
 
-      <!-- konten nanti, sekarang kosong sesuai permintaan -->
-      <div class="blast-step-content"></div>
+      <div class="blast-step-content">
+        <div v-if="step === 'upload'" class="blast-panel">
+          <div class="blast-title">Upload Contact</div>
+          <div class="blast-subtitle">ini adalah halaman upload</div>
+        </div>
+
+        <div v-else-if="step === 'template'" class="blast-panel">
+          <div class="blast-title">Template</div>
+          <div class="blast-subtitle">ini adalah halaman template</div>
+        </div>
+
+        <div v-else-if="step === 'setting'" class="blast-panel">
+          <div class="blast-title">Setting</div>
+          <div class="blast-subtitle">ini adalah halaman setting</div>
+        </div>
+
+        <div v-else-if="step === 'send'" class="blast-panel">
+          <div class="blast-title">Send</div>
+          <div class="blast-subtitle">ini adalah halaman send</div>
+        </div>
+      </div>
     </div>
   `,
 };
