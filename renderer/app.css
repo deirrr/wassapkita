@@ -264,6 +264,46 @@ body {
   margin-top: 10px;
 }
 
+/* Blast step tabs */
+.blast-steps {
+  display: flex;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(63, 170, 111, 0.03);
+  border: 1px solid #b4fad50f;
+}
+
+.blast-step {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  color: #40846a;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  transition: transform 0.08s ease, background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.blast-step:hover {
+  transform: translateY(-1px);
+  border-color: rgba(198, 255, 177, 0.18);
+  color: #405749;
+}
+
+.blast-step-active {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: rgba(99, 102, 241, 0.35);
+  color: #1e293b;
+}
+
+.blast-step-content {
+  min-height: 240px; /* placeholder biar layout enak */
+}
+
 /* Responsive */
 @media (max-width: 520px) {
   .card {

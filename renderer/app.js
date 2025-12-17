@@ -70,9 +70,39 @@ const HomeView = {
 
 const BlastView = {
   name: "BlastView",
+  data() {
+    return {
+      step: "upload", // upload | template | setting | send
+      steps: [
+        { key: "upload", label: "1 Upload Contact" },
+        { key: "template", label: "2 Template" },
+        { key: "setting", label: "3 Setting" },
+        { key: "send", label: "4 Send" },
+      ],
+    };
+  },
+  methods: {
+    setStep(k) {
+      this.step = k;
+    },
+  },
   template: `
     <div class="dash-body">
-      BLAST
+      <div class="blast-steps">
+        <button
+          v-for="s in steps"
+          :key="s.key"
+          class="blast-step"
+          :class="{ 'blast-step-active': step === s.key }"
+          type="button"
+          @click="setStep(s.key)"
+        >
+          <span class="blast-step-label">{{ s.label }}</span>
+        </button>
+      </div>
+
+      <!-- konten nanti, sekarang kosong sesuai permintaan -->
+      <div class="blast-step-content"></div>
     </div>
   `,
 };
