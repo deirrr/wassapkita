@@ -93,7 +93,9 @@ const BlastView = {
 
     openContactPicker() {
       this.uploadError = "";
-      this.$refs.contactFileInput.click();
+      if (this.$refs.contactInput) {
+        this.$refs.contactInput.click();
+      }
     },
 
     onContactFileChange(e) {
@@ -139,13 +141,17 @@ const BlastView = {
           <input
             ref="contactInput"
             type="file"
-            accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+            accept=".xlsx,.xls"
             style="display:none"
             @change="onContactFileChange"
           />
 
           <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-            <button type="button" class="btn" @click="openContactPicker">
+            <button
+              type="button"
+              class="btn"
+              @click="openContactPicker"
+            >
               Upload Contact (Excel)
             </button>
 
