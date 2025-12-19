@@ -81,41 +81,65 @@ const BlastView = {
       ],
 
       // upload state
-      contactFile: null,
-      cpntactFileName: "",
+      isPicking: false,
+      contactFileName: "",
       uploadError: "",
+      contacts: [], // {name, no_wa}
     };
+  },
+  computed: {
+    canNext() {
+      return Array.isArray(this.contacts) && this.contacts.length > 0;
+    },
   },
   methods: {
     setStep(k) {
       this.step = k;
     },
 
-    openContactPicker() {
+    async pickAndLoadContacts() {
       this.uploadError = "";
-      if (this.$refs.contactInput) {
-        this.$refs.contactInput.click();
+      this.contactFileName = "";
+      this.contacts = [];
+
+      if (!window.wassapkita?.importContactsXlsx) {
+        this.uploadError =
+          "Fitur import belum tersedia (preload belum terpasang).";
+        return;
+      }
+
+      this.isPicking = true;
+
+      try {
+        const res = await window.wassapkita.importContactsXlsx();
+
+        if (res?.cancelled) {
+          this.uploadError = "Dibatalkan.";
+          return;
+        }
+
+        if (!res?.ok) {
+          this.uploadError = res?.error || "Gagal membaca file Excel.";
+          return;
+        }
+
+        this.contactFileName = res.fileName || "contacts.xlsx";
+        this.contacts = Array.isArray(res.rows) ? res.rows : [];
+
+        if (this.contacts.length === 0) {
+          this.uploadError =
+            "File terbaca, tapi tidak ada data kontak yang valid.";
+        }
+      } catch (e) {
+        this.uploadError = `Error: ${e?.message || e}`;
+      } finally {
+        this.isPicking = false;
       }
     },
 
-    onContactFileChange(e) {
-      this.uploadError = "";
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      const name = (file.name || "").toLowerCase();
-      const isExcel = name.endsWith(".xlsx") || name.endsWith(".xls");
-
-      if (!isExcel) {
-        this.contactFile = null;
-        this.cpntactFileName = "";
-        this.uploadError =
-          "Unsupported file type. Only .xlsx and .xls are supported";
-        e.target.value = "";
-        return;
-      }
-      this.contactFile = file;
-      this.cpntactFileName = file.name;
+    goNext() {
+      if (!this.canNext) return;
+      this.setStep("template");
     },
   },
   template: `
@@ -136,32 +160,59 @@ const BlastView = {
       <div class="blast-step-content">
         <div v-if="step === 'upload'" class="blast-panel">
           <div class="blast-title">Upload Contact</div>
-          <div class="blast-subtitle">Unggah file Excel berisi daftar kontak.</div>
-
-          <input
-            ref="contactInput"
-            type="file"
-            accept=".xlsx,.xls"
-            style="display:none"
-            @change="onContactFileChange"
-          />
+          <div class="blast-subtitle">Unggah file Excel (.xlsx) berisi kolom name/nama dan no_wa/phone.</div>
 
           <div style="margin-top:12px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
             <button
               type="button"
               class="btn"
-              @click="openContactPicker"
+              :disabled="isPicking"
+              @click="pickAndLoadContacts"
             >
-              Upload Contact (Excel)
+              {{ isPicking ? "Membaca Excel..." : "Upload Contact (Excel)" }}
             </button>
 
             <div v-if="contactFileName" class="blast-subtitle" style="margin:0;">
-              File: {{ contactFileName }}
+              File: {{ contactFileName }} ({{ contacts.length }} kontak)
             </div>
           </div>
 
           <div v-if="uploadError" class="blast-subtitle" style="margin-top:10px; color:#fca5a5;">
             {{ uploadError }}
+          </div>
+
+          <div v-if="contacts.length" style="margin-top:14px;">
+            <div class="blast-subtitle" style="margin-bottom:8px;">
+              Preview (maks 20 data pertama)
+            </div>
+
+            <div style="overflow:auto; border:1px solid rgba(255,255,255,0.08); border-radius:12px;">
+              <table style="width:100%; border-collapse:collapse; font-size:13px;">
+                <thead>
+                  <tr>
+                    <th style="text-align:left; padding:10px; border-bottom:1px solid rgba(255,255,255,0.08);">name</th>
+                    <th style="text-align:left; padding:10px; border-bottom:1px solid rgba(255,255,255,0.08);">no_wa</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(c, idx) in contacts.slice(0, 20)" :key="idx">
+                    <td style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.06);">{{ c.name }}</td>
+                    <td style="padding:10px; border-bottom:1px solid rgba(255,255,255,0.06);">{{ c.no_wa }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style="margin-top:12px; display:flex; justify-content:flex-end;">
+              <button
+                type="button"
+                class="btn-primary"
+                :disabled="!canNext"
+                @click="goNext"
+              >
+                Next
+              </button>
+            </div>
           </div>
         </div>
 
@@ -220,8 +271,6 @@ const DashboardView = {
       this.$emit("tab-change", next);
     },
     iconSvg(name) {
-      // inline SVG biar tanpa dependency
-      // stroke mengikuti currentColor
       if (name === "wa") {
         return `
           <svg class="icon-12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -250,7 +299,6 @@ const DashboardView = {
         `;
       }
 
-      // fallback icon
       return `
         <svg class="icon-12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M12 21a9 9 0 1 0-9-9 9 9 0 0 0 9 9z" stroke="currentColor" stroke-width="1.8"/>
@@ -261,7 +309,6 @@ const DashboardView = {
   template: `
     <div class="dash-page">
       <div class="dash-topbar">
-        <!-- LEFT: WA NUMBER = HOME -->
         <div class="dash-left">
           <a
             href="#"
@@ -273,7 +320,6 @@ const DashboardView = {
           </a>
         </div>
 
-        <!-- RIGHT: MENU -->
         <div class="dash-right">
           <a
             href="#"
