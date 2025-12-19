@@ -294,9 +294,88 @@ async function exportContactsToXlsxInteractive() {
   };
 }
 
+// =====================
+// XLSX Import (Blast Contacts)
+// =====================
+async function importContactsFromXlsxInteractive() {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: "Pilih File Kontak (Excel)",
+    properties: ["openFile"],
+    filters: [{ name: "Excel Workbook", extensions: ["xlsx"] }],
+  });
+
+  if (result.canceled || !result.filePaths?.[0]) {
+    return { ok: true, cancelled: true };
+  }
+
+  const filePath = result.filePaths[0];
+  const fileName = path.basename(filePath);
+
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(filePath);
+
+  const sheet = workbook.worksheets?.[0];
+  if (!sheet) {
+    return { ok: false, error: "Sheet tidak ditemukan di file Excel." };
+  }
+
+  // header row = row 1
+  const headerRow = sheet.getRow(1);
+  const header = [];
+  headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+    header[colNumber - 1] = String(cell?.value || "")
+      .trim()
+      .toLowerCase();
+  });
+
+  const colNameIdx = header.findIndex((h) => ["name", "nama"].includes(h)) + 1;
+
+  const colNoIdx =
+    header.findIndex((h) =>
+      ["no_wa", "no wa", "wa", "phone", "telp", "nomor", "number"].includes(h)
+    ) + 1;
+
+  // fallback kalau header tidak sesuai
+  const nameCol = colNameIdx > 0 ? colNameIdx : 1;
+  const noCol = colNoIdx > 0 ? colNoIdx : 2;
+
+  const map = new Map(); // dedup by no_wa
+  const rows = [];
+
+  for (let i = 2; i <= sheet.rowCount; i++) {
+    const r = sheet.getRow(i);
+    const nameRaw = r.getCell(nameCol).value;
+    const noRaw = r.getCell(noCol).value;
+
+    const name = String(nameRaw || "").trim();
+    const noDigits = String(noRaw || "").replace(/\D/g, "");
+
+    if (!name && !noDigits) continue;
+    if (!noDigits) continue;
+
+    if (!map.has(noDigits)) {
+      map.set(noDigits, true);
+      rows.push({ name, no_wa: noDigits });
+    }
+  }
+
+  return {
+    ok: true,
+    cancelled: false,
+    filePath,
+    fileName,
+    count: rows.length,
+    rows,
+  };
+}
+
 function registerIpcHandlers() {
   ipcMain.handle("contacts:exportXlsx", async () => {
     return exportContactsToXlsxInteractive();
+  });
+
+  ipcMain.handle("contacts:importXlsx", async () => {
+    return importContactsFromXlsxInteractive();
   });
 }
 
