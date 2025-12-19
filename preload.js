@@ -32,4 +32,9 @@ contextBridge.exposeInMainWorld("wassapkita", {
   exportContactsXlsx: () => {
     return ipcRenderer.invoke("contacts:exportXlsx");
   },
+
+  // ADDED: import contacts from Excel (.xlsx) for Blast feature
+  importContactsXlsx: () => {
+    return ipcRenderer.invoke("contacts:importXlsx");
+  },
 });
