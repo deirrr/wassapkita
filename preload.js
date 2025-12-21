@@ -28,13 +28,36 @@ contextBridge.exposeInMainWorld("wassapkita", {
     });
   },
 
-  // ADDED: export contacts to Excel (.xlsx)
+  // export contacts to Excel (.xlsx)
   exportContactsXlsx: () => {
     return ipcRenderer.invoke("contacts:exportXlsx");
   },
 
-  // ADDED: import contacts from Excel (.xlsx) for Blast feature
+  // import contacts from Excel (.xlsx) for Blast feature
   importContactsXlsx: () => {
     return ipcRenderer.invoke("contacts:importXlsx");
+  },
+
+  // blast send
+  sendBlast: (payload) => {
+    return ipcRenderer.invoke("blast:send", payload);
+  },
+
+  // blast cancel
+  cancelBlast: () => {
+    ipcRenderer.send("blast:cancel");
+  },
+
+  // blast progress events
+  onBlastProgress: (callback) => {
+    ipcRenderer.on("blast:progress", (_event, data) => {
+      if (typeof callback === "function") callback(data);
+    });
+  },
+
+  onBlastDone: (callback) => {
+    ipcRenderer.on("blast:done", (_event, data) => {
+      if (typeof callback === "function") callback(data);
+    });
   },
 });

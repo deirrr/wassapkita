@@ -17,6 +17,10 @@ let lastStatus = "";
 let lastMe = null;
 let lastQr = "";
 
+// blast state
+let isBlasting = false;
+let blastCancelRequested = false;
+
 if (process.platform === "win32") {
   app.setAppUserModelId("com.wassapkita.app");
 }
@@ -71,7 +75,6 @@ function buildClient() {
       ],
     },
     // optional: reduce noisy logs
-    // You can remove this if you want default behavior.
     ...(waDebug ? {} : { takeoverOnConflict: true, takeoverTimeoutMs: 0 }),
   });
 }
@@ -83,7 +86,6 @@ async function restartWhatsAppClient() {
   try {
     if (waClient) {
       try {
-        // optional; may fail if already disconnected
         await waClient.logout();
       } catch (_) {}
 
@@ -107,7 +109,6 @@ function wireEvents(client) {
   client.on("qr", async (qr) => {
     console.log("QR diterima dari WhatsApp");
 
-    // optional: keep status informative
     lastStatus = "qr";
 
     try {
@@ -134,7 +135,7 @@ function wireEvents(client) {
     if (mainWindow) {
       mainWindow.webContents.send("wa:status", "ready");
       mainWindow.webContents.send("wa:me", { number, pushname });
-      mainWindow.webContents.send("wa:qr", ""); // clear QR in UI
+      mainWindow.webContents.send("wa:qr", "");
     }
   });
 
@@ -160,7 +161,6 @@ function wireEvents(client) {
 
     if (mainWindow) mainWindow.webContents.send("wa:status", lastStatus);
 
-    // usually safer to restart
     restartWhatsAppClient();
   });
 
@@ -177,7 +177,6 @@ function wireEvents(client) {
       mainWindow.webContents.send("wa:qr", "");
     }
 
-    // if LOGOUT, force re-init to get fresh QR
     if (String(reason).toUpperCase() === "LOGOUT") {
       restartWhatsAppClient();
     }
@@ -200,11 +199,9 @@ function guessMyCountryPrefix(msisdn) {
   const s = String(msisdn || "").replace(/\D/g, "");
   if (!s) return "";
 
-  // heuristik aman (cukup untuk filter "asing" yang kamu temui)
-  if (s.startsWith("62")) return "62"; // Indonesia
-  if (s.startsWith("1")) return "1"; // US/CA
+  if (s.startsWith("62")) return "62";
+  if (s.startsWith("1")) return "1";
 
-  // fallback: ambil 2 digit awal
   return s.slice(0, 2);
 }
 
@@ -217,28 +214,23 @@ async function exportContactsToXlsxInteractive() {
 
   const contacts = await waClient.getContacts();
 
-  // hanya kontak individual (@c.us), dan yang dianggap "my contact"
   const userContacts = (contacts || []).filter((c) => {
     const idStr = c?.id?._serialized || "";
     if (!idStr.endsWith("@c.us")) return false;
     if (c?.isMyContact !== true) return false;
-    if (!String(c?.name || "").trim()) return false; // butuh nama phonebook
+    if (!String(c?.name || "").trim()) return false;
     return true;
   });
 
-  // dedup by number
-  const map = new Map(); // key: no_wa, value: name
+  const map = new Map();
   for (const c of userContacts) {
     const no = (c?.id?.user || "").replace(/\D/g, "");
     if (!no) continue;
 
-    // skip kontak diri sendiri
     if (lastMe?.number && String(no) === String(lastMe.number)) continue;
 
-    // FILTER: hanya 1 negara dengan akun WA yang login (buang nomor asing yang "nyasar")
     if (myCountryPrefix && !String(no).startsWith(myCountryPrefix)) continue;
 
-    // STRICT: hanya kontak yang benar-benar tersimpan (nama phonebook)
     const savedName = (c?.name || "").trim();
     if (!savedName) continue;
 
@@ -276,12 +268,10 @@ async function exportContactsToXlsxInteractive() {
     { header: "no_wa", key: "no_wa", width: 18 },
   ];
 
-  // header bold
   sheet.getRow(1).font = { bold: true };
 
   for (const r of rows) sheet.addRow(r);
 
-  // pastikan no_wa jadi text (tidak jadi scientific notation)
   sheet.getColumn("no_wa").numFmt = "@";
 
   await workbook.xlsx.writeFile(result.filePath);
@@ -319,7 +309,6 @@ async function importContactsFromXlsxInteractive() {
     return { ok: false, error: "Sheet tidak ditemukan di file Excel." };
   }
 
-  // header row = row 1
   const headerRow = sheet.getRow(1);
   const header = [];
   headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
@@ -335,11 +324,10 @@ async function importContactsFromXlsxInteractive() {
       ["no_wa", "no wa", "wa", "phone", "telp", "nomor", "number"].includes(h)
     ) + 1;
 
-  // fallback kalau header tidak sesuai
   const nameCol = colNameIdx > 0 ? colNameIdx : 1;
   const noCol = colNoIdx > 0 ? colNoIdx : 2;
 
-  const map = new Map(); // dedup by no_wa
+  const map = new Map();
   const rows = [];
 
   for (let i = 2; i <= sheet.rowCount; i++) {
@@ -369,6 +357,219 @@ async function importContactsFromXlsxInteractive() {
   };
 }
 
+// =====================
+// BLAST SEND
+// =====================
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function randomBetween(min, max) {
+  const a = Number(min) || 0;
+  const b = Number(max) || 0;
+  const lo = Math.min(a, b);
+  const hi = Math.max(a, b);
+  return Math.floor(lo + Math.random() * (hi - lo + 1));
+}
+
+function normalizeToWid(noRaw, opts = {}) {
+  const digits = String(noRaw || "").replace(/\D/g, "");
+  if (!digits) return "";
+
+  const addCountry = !!opts.addCountry;
+  const countryCode = String(opts.countryCode || "").replace(/\D/g, "");
+
+  if (addCountry && countryCode) {
+    if (digits.startsWith("0")) {
+      return `${countryCode}${digits.slice(1)}@c.us`;
+    }
+    if (digits.startsWith(countryCode)) {
+      return `${digits}@c.us`;
+    }
+    return `${digits}@c.us`;
+  }
+
+  return `${digits}@c.us`;
+}
+
+function applyTemplate(template, vars) {
+  const t = String(template || "");
+  return t
+    .replaceAll("{name}", String(vars?.name || ""))
+    .replaceAll("{no_wa}", String(vars?.no_wa || ""));
+}
+
+async function sendBlastInteractive(payload) {
+  if (!waClient) throw new Error("WhatsApp client belum siap.");
+  if (!lastMe?.number)
+    throw new Error("WhatsApp belum terhubung. Silakan login dulu.");
+
+  if (isBlasting) {
+    return { ok: false, error: "Blast sedang berjalan. Silakan stop dulu." };
+  }
+
+  const contacts = Array.isArray(payload?.contacts) ? payload.contacts : [];
+  const template = String(payload?.template || "").trim();
+
+  const delayMinMs = Number(payload?.delayMinMs ?? 1200);
+  const delayMaxMs = Number(payload?.delayMaxMs ?? 2500);
+
+  const addCountry = !!payload?.addCountry;
+  const countryCode = String(payload?.countryCode || "").trim();
+
+  const skipIfNoName = !!payload?.skipIfNoName;
+
+  if (!contacts.length) return { ok: false, error: "Kontak kosong." };
+  if (!template) return { ok: false, error: "Template pesan masih kosong." };
+
+  isBlasting = true;
+  blastCancelRequested = false;
+
+  const total = contacts.length;
+
+  if (mainWindow) {
+    mainWindow.webContents.send("blast:progress", {
+      type: "start",
+      total,
+      sent: 0,
+      failed: 0,
+      current: 0,
+      message: "Blast dimulai...",
+      item: null,
+    });
+  }
+
+  let sent = 0;
+  let failed = 0;
+
+  for (let i = 0; i < contacts.length; i++) {
+    if (blastCancelRequested) break;
+
+    const c = contacts[i] || {};
+    const name = String(c.name || "").trim();
+    const no_wa = String(c.no_wa || "").trim();
+
+    if (skipIfNoName && !name) {
+      failed++;
+      if (mainWindow) {
+        mainWindow.webContents.send("blast:progress", {
+          type: "item",
+          total,
+          sent,
+          failed,
+          current: i + 1,
+          message: "Skip: nama kosong",
+          item: {
+            index: i + 1,
+            name,
+            no_wa,
+            status: "skipped",
+            error: "nama kosong",
+          },
+        });
+      }
+      continue;
+    }
+
+    const wid = normalizeToWid(no_wa, { addCountry, countryCode });
+    if (!wid) {
+      failed++;
+      if (mainWindow) {
+        mainWindow.webContents.send("blast:progress", {
+          type: "item",
+          total,
+          sent,
+          failed,
+          current: i + 1,
+          message: "Gagal: nomor tidak valid",
+          item: {
+            index: i + 1,
+            name,
+            no_wa,
+            status: "failed",
+            error: "nomor tidak valid",
+          },
+        });
+      }
+      continue;
+    }
+
+    const text = applyTemplate(template, { name, no_wa });
+
+    try {
+      await waClient.sendMessage(wid, text);
+
+      sent++;
+      if (mainWindow) {
+        mainWindow.webContents.send("blast:progress", {
+          type: "item",
+          total,
+          sent,
+          failed,
+          current: i + 1,
+          message: "Terkirim",
+          item: { index: i + 1, name, no_wa, status: "sent", error: "" },
+        });
+      }
+    } catch (err) {
+      failed++;
+      if (mainWindow) {
+        mainWindow.webContents.send("blast:progress", {
+          type: "item",
+          total,
+          sent,
+          failed,
+          current: i + 1,
+          message: "Gagal kirim",
+          item: {
+            index: i + 1,
+            name,
+            no_wa,
+            status: "failed",
+            error: String(err?.message || err),
+          },
+        });
+      }
+    }
+
+    const waitMs = randomBetween(delayMinMs, delayMaxMs);
+    if (i < contacts.length - 1 && !blastCancelRequested) {
+      if (mainWindow) {
+        mainWindow.webContents.send("blast:progress", {
+          type: "delay",
+          total,
+          sent,
+          failed,
+          current: i + 1,
+          message: `Delay ${waitMs} ms`,
+          item: null,
+        });
+      }
+      await sleep(waitMs);
+    }
+  }
+
+  const cancelled = blastCancelRequested;
+
+  isBlasting = false;
+  blastCancelRequested = false;
+
+  if (mainWindow) {
+    mainWindow.webContents.send("blast:done", {
+      ok: true,
+      cancelled,
+      total,
+      sent,
+      failed,
+    });
+  }
+
+  return { ok: true, cancelled, total, sent, failed };
+}
+
+// =====================
+// IPC
+// =====================
 function registerIpcHandlers() {
   ipcMain.handle("contacts:exportXlsx", async () => {
     return exportContactsToXlsxInteractive();
@@ -376,6 +577,14 @@ function registerIpcHandlers() {
 
   ipcMain.handle("contacts:importXlsx", async () => {
     return importContactsFromXlsxInteractive();
+  });
+
+  ipcMain.handle("blast:send", async (_e, payload) => {
+    return sendBlastInteractive(payload);
+  });
+
+  ipcMain.on("blast:cancel", () => {
+    if (isBlasting) blastCancelRequested = true;
   });
 }
 
