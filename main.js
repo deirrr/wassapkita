@@ -25,6 +25,8 @@ if (process.platform === "win32") {
   app.setAppUserModelId("com.wassapkita.app");
 }
 
+const isDev = !app.isPackaged;
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 900,
@@ -41,7 +43,12 @@ function createWindow() {
   // extra safety: ensure it's not visible even when pressing Alt
   mainWindow.setMenuBarVisibility(false);
 
-  mainWindow.loadFile("index.html");
+  if (isDev) {
+    mainWindow.loadURL("http://localhost:5173");
+    mainWindow.webContents.openDevTools({ mode: "detach" });
+  } else {
+    mainWindow.loadFile(path.join(__dirname, "renderer-dist", "index.html"));
+  }
 
   mainWindow.webContents.on("did-finish-load", () => {
     setTimeout(() => {
