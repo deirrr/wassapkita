@@ -6,7 +6,9 @@
   "scripts": {
     "start": "electron .",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "dev": "concurrently -k \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "build": "vite build"
   },
   "build": {
     "appId": "com.wassapkita.app",
@@ -39,13 +41,18 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.3",
+    "concurrently": "^9.2.1",
     "electron": "^33.0.0",
-    "electron-builder": "^26.0.12"
+    "electron-builder": "^26.0.12",
+    "vite": "^7.3.0",
+    "wait-on": "^9.0.3"
   },
   "dependencies": {
     "exceljs": "^4.4.0",
     "puppeteer": "^24.33.0",
     "qrcode": "^1.5.4",
+    "vue": "^3.5.26",
     "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js#5438c2042b9b42370c0acef21e511c08bb462983"
   }
 }
